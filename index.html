@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>GBB SHOP</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at 20% 30%, #0a0c15, #020308);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+        body.light-theme {
+            background: radial-gradient(circle at 20% 30%, #fef9e0, #f3e8ff);
+            color: #1a1a1a;
+        }
+
+        :root {
+            --primary: #ff006e;
+            --secondary: #3a86ff;
+            --accent: #8338ec;
+            --warning: #ffbe0b;
+            --success: #06d6a0;
+            --danger: #ef476f;
+        }
+
+        .glass-card {
+            background: rgba(25, 20, 45, 0.75);
+            backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 0, 110, 0.5);
+            box-shadow: 0 15px 40px -10px rgba(255, 0, 110, 0.3);
+            border-radius: 32px;
+        }
+        .glass-modal {
+            background: rgba(18, 12, 30, 0.95);
+            backdrop-filter: blur(28px);
+            border: 2px solid rgba(58, 134, 255, 0.6);
+            box-shadow: 0 0 40px rgba(58, 134, 255, 0.4);
+            border-radius: 48px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff006e, #fb5607);
+            border: none;
+            border-bottom: 5px solid #9d0208;
+            color: white;
+            font-weight: 800;
+            border-radius: 20px;
+            padding: 0.9rem 2rem;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 0 #9d0208, 0 0 20px #ff006e;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 13px 0 #9d0208, 0 0 35px #ff006e;
+        }
+        .btn-primary:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #9d0208;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3a86ff, #8338ec);
+            border-bottom: 5px solid #3c096c;
+            box-shadow: 0 10px 0 #3c096c, 0 0 20px #3a86ff;
+            color: white;
+            font-weight: 800;
+            border-radius: 20px;
+            padding: 0.9rem 2rem;
+            cursor: pointer;
+        }
+
+        .upload-area {
+            background: rgba(255, 0, 110, 0.1);
+            border: 4px dashed #3a86ff;
+            border-radius: 48px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .upload-area:hover {
+            background: rgba(58, 134, 255, 0.2);
+            border-color: #ff006e;
+            transform: scale(0.98);
+        }
+        
+        .proof-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 16px;
+            border: 3px solid #ffbe0b;
+            margin-top: 0.5rem;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 1.4rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            border: 2px solid transparent;
+        }
+        .badge-attente { background: #ffbe0b; color: #000; box-shadow: 0 0 15px #ffbe0b; }
+        .badge-valide { background: #06d6a0; color: #000; box-shadow: 0 0 15px #06d6a0; }
+        .badge-refuse { background: #ef476f; color: white; box-shadow: 0 0 15px #ef476f; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #1a1a2e; }
+        ::-webkit-scrollbar-thumb { background: #ff006e; border-radius: 10px; }
+    </style>
+</head>
+<body id="body-theme" class="dark-theme antialiased text-white">
+    <div id="app" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 min-h-screen"></div>
+
+    <!-- Input file caché -->
+    <input type="file" id="fileUpload" accept="image/*" style="display: none;">
+
+    <script type="text/x-template" id="main-template">
+        <!-- CONNEXION DISCORD OBLIGATOIRE -->
+        <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
+            <div class="glass-modal max-w-md w-full p-12 rounded-[80px] border-4 border-[#ff006e] text-center">
+                <div class="w-32 h-32 mx-auto bg-gradient-to-br from-[#ff006e] to-[#3a86ff] rounded-[40px] flex items-center justify-center text-6xl shadow-2xl mb-8 animate-float">
+                    <i class="fab fa-discord"></i>
+                </div>
+                <h2 class="text-5xl font-black mb-4 bg-gradient-to-r from-[#ff006e] via-[#ffbe0b] to-[#3a86ff] bg-clip-text text-transparent">
+                    {{ shopName }}
+                </h2>
+                <p class="text-[#ffbe0b] text-xl mb-8 font-bold">IDENTIFIANT DISCORD REQUIS</p>
+                <input v-model="discordIdInput" placeholder="Ex: 123456789012345678" 
+                       class="w-full bg-black/70 border-4 border-[#3a86ff] rounded-[40px] py-6 px-6 text-white text-2xl text-center focus:outline-none focus:border-[#ff006e]">
+                <button @click="loginWithDiscord" class="btn-primary w-full mt-8 py-6 text-2xl rounded-[40px]">
+                    ENTRER
+                </button>
+            </div>
+        </div>
+
+        <!-- SITE PRINCIPAL -->
+        <div v-else class="w-full min-h-screen pb-20">
+            <!-- HEADER -->
+            <header class="glass-card px-6 py-4 mb-6 flex flex-wrap items-center justify-between sticky top-2 z-50 border-4 border-[#ff006e] rounded-[50px]">
+                <div class="flex items-center gap-4">
+                    <div class="bg-gradient-to-br from-[#ff006e] to-[#3a86ff] p-5 rounded-3xl shadow-2xl animate-float">
+                        <i class="fab fa-discord text-4xl text-white"></i>
+                    </div>
+                    <span class="text-3xl md:text-5xl font-black bg-gradient-to-r from-[#ff006e] via-[#ffbe0b] to-[#3a86ff] bg-clip-text text-transparent">
+                        {{ shopName }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                    <button @click="setView('home')" class="px-4 py-3 rounded-2xl font-black text-lg" 
+                            :class="{'bg-[#ff006e] text-white': view==='home'}">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button @click="setView('shop')" class="px-4 py-3 rounded-2xl font-black text-lg"
+                            :class="{'bg-[#3a86ff] text-white': view==='shop'}">
+                        <i class="fas fa-store"></i>
+                    </button>
+                    <button @click="openAdminPasswordModal" class="px-4 py-3 rounded-2xl font-black text-lg">
+                        <i class="fas fa-shield-haltered"></i>
+                    </button>
+                    <button @click="toggleTheme" class="ml-2 p-3 rounded-full bg-[#ff006e] text-xl">
+                        <i :class="isDark ? 'fas fa-moon' : 'fas fa-sun'"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="w-full">
+                <!-- ========== PAGE ACCUEIL / BOUTIQUE ========== -->
+                <div v-if="view === 'home' || view === 'shop'">
+                    <!-- HERO - NEUTRE -->
+                    <div v-if="view === 'home'" class="glass-modal p-8 md:p-16 mb-12 rounded-[60px] border-4 border-[#3a86ff]">
+                        <div class="flex flex-col md:flex-row items-center gap-10">
+                            <div class="flex-1">
+                                <h1 class="text-5xl md:text-7xl font-black">
+                                    <span class="bg-gradient-to-r from-[#ff006e] via-[#ffbe0b] to-[#3a86ff] bg-clip-text text-transparent">
+                                        GBB SHOP
+                                    </span><br>
+                                    <span class="text-white">BOOST YOUR DISCORD</span>
+                                </h1>
+                                <p class="text-xl text-[#ffbe0b] mt-6 font-bold">
+                                    <i class="fas fa-bolt text-[#ff006e] text-3xl"></i> 
+                                    Paiement PayPal sécurisé
+                                </p>
+                                <button @click="view='shop'" class="btn-primary text-xl px-10 py-5 rounded-3xl mt-8">
+                                    ACHETER
+                                </button>
+                            </div>
+                            <div class="flex-1 flex justify-center">
+                                <div class="text-[12rem] leading-none animate-float">🛒</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GRILLE PRODUITS -->
+                    <div class="mt-6">
+                        <h2 class="text-3xl md:text-4xl font-black mb-8 flex items-center gap-4">
+                            <i class="fas fa-cubes text-[#ff006e] text-4xl"></i>
+                            <span class="bg-gradient-to-r from-[#ff006e] to-[#3a86ff] bg-clip-text text-transparent">
+                                CATALOGUE
+                            </span>
+                        </h2>
+                        
+                        <div class="product-grid">
+                            <div v-for="prod in products" :key="prod.id" 
+                                 class="glass-card p-6 flex flex-col rounded-[40px] border-4 border-transparent hover:border-[#ff006e]">
+                                <div class="text-7xl text-center py-4 animate-float">{{ prod.image || '🛒' }}</div>
+                                <div class="mt-2 text-2xl md:text-3xl font-black">{{ prod.nom }}</div>
+                                <div class="flex items-baseline gap-2 mt-2">
+                                    <span class="text-4xl md:text-5xl font-black text-[#ffbe0b]">{{ prod.prix.toFixed(2) }}</span>
+                                    <span class="text-xl">€</span>
+                                </div>
+                                <div class="flex items-center mt-3 text-lg">
+                                    <i class="fas fa-boxes mr-3 text-[#3a86ff] text-xl"></i>
+                                    <span :class="prod.stock > 3 ? 'text-[#06d6a0]' : prod.stock > 0 ? 'text-[#ffbe0b]' : 'text-[#ef476f]'"
+                                          class="font-black">
+                                        {{ prod.stock > 0 ? '✓ ' + prod.stock + ' EN STOCK' : 'ÉPUISÉ' }}
+                                    </span>
+                                </div>
+                                <button @click="openBuyModal(prod)" :disabled="prod.stock <= 0" 
+                                        class="btn-primary w-full mt-6 py-5 rounded-2xl text-xl disabled:opacity-30">
+                                    <i class="fas fa-bolt"></i> {{ prod.stock > 0 ? 'ACHETER' : 'RUPTURE' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUIVI COMMANDE -->
+                    <div class="glass-modal p-8 md:p-10 mt-16 rounded-[60px] border-4 border-[#ff006e]">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="text-2xl md:text-3xl font-black flex items-center gap-4 mb-6">
+                                    <i class="fas fa-search text-[#ff006e] text-3xl"></i>
+                                    SUIVI COMMANDE
+                                </h3>
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <input v-model="trackingCode" placeholder="Code unique" 
+                                           class="bg-black/70 border-4 border-[#3a86ff] rounded-2xl px-5 py-4 text-white text-lg flex-1 focus:outline-none focus:border-[#ff006e]">
+                                    <button @click="trackOrder" class="btn-secondary px-6 py-4 rounded-2xl text-lg whitespace-nowrap">
+                                        TRACKER
+                                    </button>
+                                </div>
+                                <div v-if="trackedOrder" class="mt-6 p-5 bg-[#ff006e]/20 rounded-3xl border-4 border-[#ffbe0b]">
+                                    <div class="flex items-center gap-3 text-xl flex-wrap">
+                                        <span class="font-mono font-bold">{{ trackedOrder.id }}</span>
+                                        <span :class="'badge-'+statutClass(trackedOrder.statut)" class="badge">
+                                            {{ trackedOrder.statut }}
+                                        </span>
+                                    </div>
+                                    <p class="mt-3 text-lg">{{ getProductName(trackedOrder.produit) }}</p>
+                                    <p class="mt-2 text-base italic">💬 {{ getLastMessageForOrder(trackedOrder.id) || 'Aucun message' }}</p>
+                                </div>
+                            </div>
+                            <div class="md:border-l-4 md:border-[#ff006e] md:pl-8">
+                                <h3 class="text-2xl md:text-3xl font-black flex items-center gap-4 mb-6">
+                                    <i class="fas fa-history text-[#3a86ff] text-3xl"></i>
+                                    MES ACHATS
+                                </h3>
+                                <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                                    <div v-for="ord in userOrders" :key="ord.id" 
+                                         class="bg-black/50 p-4 rounded-2xl border-4 border-[#8338ec]">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-mono text-sm">{{ ord.id.slice(0,10) }}...</span>
+                                            <span :class="'badge-'+statutClass(ord.statut)" class="badge text-xs">{{ ord.statut }}</span>
+                                        </div>
+                                        <p class="font-bold text-lg mt-1">{{ getProductName(ord.produit) }}</p>
+                                    </div>
+                                    <p v-if="!userOrders.length" class="text-center py-6 text-gray-400 italic">
+                                        Aucun achat
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== PANEL ADMIN (COMPLET AVEC PREUVES) ========== -->
+                <div v-if="view === 'admin' && isAdmin" class="mt-4 space-y-8">
+                    <!-- EN-TÊTE ADMIN -->
+                    <div class="glass-card p-6 md:p-8 rounded-[50px] flex flex-wrap justify-between items-center border-4 border-[#ffbe0b]">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-gradient-to-br from-[#ff006e] to-[#8338ec] p-5 rounded-3xl">
+                                <i class="fas fa-crown text-4xl text-[#ffbe0b]"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-3xl md:text-4xl font-black bg-gradient-to-r from-[#ff006e] to-[#3a86ff] bg-clip-text text-transparent">
+                                    ADMINISTRATION
+                                </h2>
+                                <span class="text-xl text-[#ffbe0b] font-bold">{{ discordIdDisplay }}</span>
+                            </div>
+                        </div>
+                        <button @click="view='home'" class="btn-secondary px-6 py-4 text-xl rounded-2xl mt-2 sm:mt-0">
+                            QUITTER
+                        </button>
+                    </div>
+
+                    <!-- STATISTIQUES -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-card p-5 rounded-3xl flex items-center gap-3 border-4 border-[#ff006e]">
+                            <div class="bg-[#ff006e] p-3 rounded-2xl"><i class="fas fa-shopping-cart text-2xl"></i></div>
+                            <div><p class="text-sm">COMMANDES</p><p class="text-3xl font-black">{{ orders.length }}</p></div>
+                        </div>
+                        <div class="glass-card p-5 rounded-3xl flex items-center gap-3 border-4 border-[#ffbe0b]">
+                            <div class="bg-[#ffbe0b] p-3 rounded-2xl"><i class="fas fa-clock text-2xl text-black"></i></div>
+                            <div><p class="text-sm">ATTENTE</p><p class="text-3xl font-black">{{ orders.filter(o=>o.statut==='en attente').length }}</p></div>
+                        </div>
+                        <div class="glass-card p-5 rounded-3xl flex items-center gap-3 border-4 border-[#06d6a0]">
+                            <div class="bg-[#06d6a0] p-3 rounded-2xl"><i class="fas fa-check-circle text-2xl text-black"></i></div>
+                            <div><p class="text-sm">VALIDÉES</p><p class="text-3xl font-black">{{ orders.filter(o=>o.statut==='validé').length }}</p></div>
+                        </div>
+                        <div class="glass-card p-5 rounded-3xl flex items-center gap-3 border-4 border-[#3a86ff]">
+                            <div class="bg-[#3a86ff] p-3 rounded-2xl"><i class="fab fa-paypal text-2xl"></i></div>
+                            <div><p class="text-sm">PAYPAL</p><p class="text-lg font-black truncate">{{ paypalEmail }}</p></div>
+                        </div>
+                    </div>
+
+                    <!-- CONFIGURATION BOUTIQUE (NOM + PAYPAL) -->
+                    <div class="glass-modal p-6 md:p-8 rounded-[50px] border-4 border-[#3a86ff]">
+                        <h3 class="text-2xl md:text-3xl font-black mb-6">⚙️ CONFIGURATION</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xl font-bold mb-3 text-[#ffbe0b]">NOM BOUTIQUE</label>
+                                <div class="flex gap-3">
+                                    <input v-model="shopNameInput" class="bg-black/70 border-4 border-[#ff006e] rounded-2xl px-5 py-4 text-white text-xl flex-1">
+                                    <button @click="updateShopName" class="btn-primary px-6 py-4 text-lg rounded-2xl">MODIFIER</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xl font-bold mb-3 text-[#3a86ff]">COMPTE PAYPAL</label>
+                                <div class="flex gap-3">
+                                    <input v-model="paypalInput" class="bg-black/70 border-4 border-[#3a86ff] rounded-2xl px-5 py-4 text-white text-xl flex-1">
+                                    <button @click="updatePaypal" class="btn-secondary px-6 py-4 text-lg rounded-2xl">SAUVEGARDER</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GESTION PRODUITS (CRUD) -->
+                    <div class="glass-modal p-6 md:p-8 rounded-[50px] border-4 border-[#ff006e]">
+                        <div class="flex flex-wrap justify-between items-center mb-6">
+                            <h3 class="text-2xl md:text-3xl font-black">📦 CATALOGUE</h3>
+                            <button @click="initNewProduct" class="bg-[#ffbe0b] text-black font-black px-6 py-4 rounded-2xl text-xl border-4 border-black">
+                                + AJOUTER
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-base md:text-lg">
+                                <thead class="border-b-4 border-[#ff006e]">
+                                    <tr><th class="py-3">ID</th><th>IMG</th><th>NOM</th><th>PRIX</th><th>STOCK</th><th>ACTIONS</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="p in products" :key="p.id" class="border-b-4 border-[#3a86ff]/30">
+                                        <td class="py-4 font-mono">{{ p.id.slice(0,5) }}..</td>
+                                        <td class="text-4xl">{{ p.image }}</td>
+                                        <td><span v-if="editProdId !== p.id">{{ p.nom }}</span>
+                                            <input v-else v-model="editForm.nom" class="bg-black/90 border-4 border-[#ffbe0b] px-3 py-2 rounded-2xl w-32"></td>
+                                        <td><span v-if="editProdId !== p.id" class="text-[#ffbe0b]">{{ p.prix }}€</span>
+                                            <input v-else v-model.number="editForm.prix" type="number" step="0.01" class="bg-black/90 border-4 border-[#ffbe0b] w-24 px-3 py-2 rounded-2xl"></td>
+                                        <td><span v-if="editProdId !== p.id">{{ p.stock }}</span>
+                                            <input v-else v-model.number="editForm.stock" type="number" class="bg-black/90 border-4 border-[#ffbe0b] w-16 px-3 py-2 rounded-2xl"></td>
+                                        <td class="space-x-3">
+                                            <button v-if="editProdId !== p.id" @click="editProduct(p)" class="text-[#3a86ff] text-2xl"><i class="fas fa-edit"></i></button>
+                                            <button v-else @click="saveProduct" class="text-[#06d6a0] text-2xl"><i class="fas fa-save"></i></button>
+                                            <button @click="deleteProduct(p.id)" class="text-[#ef476f] text-2xl"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="newProdActive">
+                                        <td>➕</td>
+                                        <td><input v-model="newProd.image" class="bg-black/90 border-4 border-[#ffbe0b] w-16 px-2 py-2 rounded-2xl text-2xl"></td>
+                                        <td><input v-model="newProd.nom" placeholder="Nom" class="bg-black/90 border-4 border-[#ffbe0b] px-3 py-2 rounded-2xl"></td>
+                                        <td><input v-model.number="newProd.prix" type="number" step="0.01" placeholder="0.00" class="bg-black/90 border-4 border-[#ffbe0b] w-24 px-3 py-2 rounded-2xl"></td>
+                                        <td><input v-model.number="newProd.stock" type="number" placeholder="5" class="bg-black/90 border-4 border-[#ffbe0b] w-16 px-3 py-2 rounded-2xl"></td>
+                                        <td><button @click="addProduct" class="text-[#06d6a0] text-3xl"><i class="fas fa-check-circle"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- GESTION COMMANDES - PREUVES VISIBLES ICI UNIQUEMENT -->
+                    <div class="glass-modal p-6 md:p-8 rounded-[50px] border-4 border-[#ffbe0b]">
+                        <h3 class="text-2xl md:text-3xl font-black mb-6">📋 COMMANDES</h3>
+                        <div class="space-y-5">
+                            <div v-for="ord in orders" :key="ord.id" class="bg-black/50 p-5 rounded-3xl border-4 border-[#3a86ff]">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="font-mono bg-[#ff006e] px-4 py-2 rounded-full text-sm">{{ ord.id.slice(0,10) }}</span>
+                                    <span :class="'badge-'+statutClass(ord.statut)" class="badge">{{ ord.statut }}</span>
+                                    <span class="text-base"><i class="fab fa-discord mr-1 text-[#ffbe0b]"></i>{{ ord.discord }}</span>
+                                    <span class="text-sm text-gray-400">{{ ord.date }}</span>
+                                    <div class="ml-auto flex gap-2">
+                                        <button @click="updateOrderStatus(ord.id, 'accepté')" class="bg-[#06d6a0] text-black font-black px-4 py-2 rounded-xl text-sm border-4 border-black">
+                                            ACCEPTER
+                                        </button>
+                                        <button @click="openRefuseModal(ord.id)" class="bg-[#ef476f] text-white font-black px-4 py-2 rounded-xl text-sm border-4 border-black">
+                                            REFUSER
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- PREUVE - VISIBLE UNIQUEMENT DANS ADMIN -->
+                                <div v-if="ord.preuveData" class="mt-4 p-4 bg-[#1a1a2e] rounded-2xl border-2 border-[#ffbe0b]">
+                                    <p class="text-sm font-bold text-[#ffbe0b] mb-2 flex items-center gap-2">
+                                        <i class="fas fa-image"></i> JUSTIFICATIF
+                                    </p>
+                                    <img :src="ord.preuveData" class="proof-preview max-h-32 rounded-xl border-4 border-[#ffbe0b]">
+                                    <p class="text-xs text-gray-400 mt-1">{{ ord.preuveNom || 'Capture' }}</p>
+                                </div>
+
+                                <!-- MESSAGES -->
+                                <div class="mt-4 border-t-4 border-[#ff006e] pt-4">
+                                    <p class="text-base font-bold mb-2">💬 MESSAGES</p>
+                                    <div v-for="msg in getMessagesByOrder(ord.id)" :key="msg.id" class="text-sm bg-black/40 p-2 rounded-xl mb-1">
+                                        <span class="font-black text-[#ffbe0b]">{{ msg.expediteur }}:</span>
+                                        {{ msg.contenu }}
+                                        <span class="text-xs text-gray-500 ml-2">{{ msg.date }}</span>
+                                    </div>
+                                    <div class="flex mt-3">
+                                        <input v-model="replyMsg[ord.id]" placeholder="Répondre..." 
+                                               class="flex-1 bg-black/80 border-4 border-[#3a86ff] rounded-l-2xl px-4 py-3 text-base">
+                                        <button @click="sendAdminMessage(ord.id)" class="bg-[#ff006e] px-5 rounded-r-2xl text-xl">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p v-if="!orders.length" class="text-center py-8 text-gray-400 italic">Aucune commande</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGIN ADMIN (si pas encore admin) -->
+                <div v-if="view === 'admin' && !isAdmin && isLoggedIn" class="flex justify-center items-center min-h-[60vh]">
+                    <div class="glass-modal max-w-lg w-full p-10 rounded-[60px] border-4 border-[#ff006e] text-center">
+                        <i class="fas fa-lock text-6xl text-[#ffbe0b] mb-5"></i>
+                        <h3 class="text-3xl md:text-4xl font-black mb-6">ACCÈS ADMIN</h3>
+                        <input type="password" v-model="adminPass" placeholder="Mot de passe" 
+                               class="w-full bg-black/80 border-4 border-[#3a86ff] rounded-2xl p-4 text-xl mb-5">
+                        <button @click="checkAdminPass" class="btn-primary w-full py-4 text-xl rounded-2xl">VALIDER</button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- MODAL ACHAT -->
+            <div v-if="showBuyModal" class="fixed inset-0 flex items-center justify-center z-[9999] p-4 bg-black/90 backdrop-blur-xl overflow-y-auto" @click.self="closeBuyModal">
+                <div class="glass-modal max-w-2xl w-full p-8 md:p-12 rounded-[60px] relative border-8 border-[#ff006e] my-8">
+                    <button @click="closeBuyModal" class="absolute top-4 right-4 text-4xl text-[#ff006e] hover:text-[#ffbe0b] z-10">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                    
+                    <!-- STEP 1: INFOS -->
+                    <div v-if="buyStep === 1" class="w-full">
+                        <div class="flex items-center gap-4 text-4xl font-black mb-8">
+                            <i class="fab fa-discord text-[#5865F2]"></i>
+                            <span class="bg-gradient-to-r from-[#ff006e] to-[#3a86ff] bg-clip-text text-transparent">GBB • ACHAT</span>
+                        </div>
+                        <div class="bg-[#ff006e]/20 p-6 rounded-3xl flex items-center gap-6 mb-6 border-4 border-[#ffbe0b]">
+                            <span class="text-7xl animate-float">{{ selectedProd?.image }}</span>
+                            <div>
+                                <p class="text-3xl font-black">{{ selectedProd?.nom }}</p>
+                                <p class="text-4xl font-black text-[#ffbe0b] mt-2">{{ selectedProd?.prix }} €</p>
+                            </div>
+                        </div>
+                        <div class="space-y-5">
+                            <div class="relative">
+                                <i class="fas fa-hashtag absolute left-4 top-5 text-2xl text-[#ff006e]"></i>
+                                <input v-model="buyerDiscord" :value="discordIdDisplay" readonly
+                                       class="w-full bg-black/70 border-4 border-[#3a86ff] rounded-2xl py-5 pl-14 pr-4 text-white text-xl font-bold">
+                            </div>
+                            <div class="relative">
+                                <i class="fas fa-envelope absolute left-4 top-5 text-2xl text-[#3a86ff]"></i>
+                                <input v-model="buyerEmail" placeholder="VOTRE EMAIL *" type="email" 
+                                       class="w-full bg-black/70 border-4 border-[#3a86ff] rounded-2xl py-5 pl-14 pr-4 text-white text-xl focus:outline-none focus:border-[#ff006e]">
+                            </div>
+                            <button @click="submitBuyerInfo" class="btn-primary w-full py-5 text-2xl rounded-2xl mt-4">
+                                CONTINUER
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: PAIEMENT + UPLOAD -->
+                    <div v-if="buyStep === 2" class="w-full">
+                        <div class="text-center bg-gradient-to-br from-[#ff006e]/20 to-[#3a86ff]/20 p-6 md:p-8 rounded-4xl border-4 border-[#ffbe0b]">
+                            <i class="fab fa-paypal text-7xl text-[#3a86ff] mb-3"></i>
+                            <p class="text-3xl font-black mb-3">PAIEMENT PAYPAL</p>
+                            <div class="bg-black/80 p-4 rounded-2xl font-mono text-xl md:text-2xl mt-3 border-4 border-[#ff006e] break-all">
+                                {{ paypalEmail }}
+                            </div>
+                            <p class="text-lg md:text-xl mt-5 font-bold">Objet : <span class="text-[#ffbe0b] bg-black/50 px-4 py-2 rounded-xl">{{ orderRef }}</span></p>
+                            
+                            <!-- UPLOAD - SANS TEXTE EXPLICITE -->
+                            <div class="mt-6">
+                                <div class="upload-area" @click="triggerFileUpload" @dragover.prevent @drop.prevent="handleFileDrop">
+                                    <i class="fas fa-cloud-upload-alt text-6xl text-[#ff006e] mb-3"></i>
+                                    <p class="text-2xl font-black">CLIQUEZ OU GLISSEZ</p>
+                                </div>
+                                
+                                <div v-if="uploadedFile" class="mt-4 bg-black/60 p-4 rounded-2xl">
+                                    <p class="text-lg font-bold text-[#06d6a0]">✓ FICHIER PRÊT</p>
+                                    <div class="flex items-center gap-3 mt-2">
+                                        <i class="fas fa-file-image text-3xl text-[#ffbe0b]"></i>
+                                        <span class="text-base">{{ uploadedFile.name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button @click="finalizeOrder" :disabled="!uploadedFile" 
+                                    class="w-full mt-6 py-5 text-2xl rounded-2xl font-black disabled:opacity-30"
+                                    :class="uploadedFile ? 'bg-[#ffbe0b] text-black border-4 border-black' : 'bg-gray-700 text-gray-300'">
+                                ✅ VALIDER LA COMMANDE
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: CONFIRMATION -->
+                    <div v-if="buyStep === 3" class="text-center py-8">
+                        <div class="text-8xl mb-4 animate-bounce">🎉</div>
+                        <h3 class="text-4xl font-black text-[#ffbe0b] mb-3">COMMANDE EFFECTUÉE</h3>
+                        <p class="text-2xl mt-3 bg-[#ff006e]/30 px-6 py-4 rounded-3xl border-4 border-[#3a86ff] font-mono break-all">
+                            {{ lastOrderId }}
+                        </p>
+                        <p class="mt-6"><span class="badge badge-attente text-xl px-8 py-3">EN ATTENTE</span></p>
+                        <button @click="closeBuyModal" class="btn-primary mt-8 px-12 py-5 text-2xl rounded-3xl">
+                            FERMER
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL REFUS -->
+            <div v-if="showRefuseModal" class="fixed inset-0 flex items-center justify-center z-[9999] bg-black/90 p-4" @click.self="showRefuseModal=false">
+                <div class="glass-modal max-w-lg w-full p-8 rounded-[60px] border-8 border-[#ef476f]">
+                    <h4 class="text-3xl font-black flex gap-3 text-[#ef476f] mb-4">
+                        <i class="fas fa-ban"></i> MOTIF DE REFUS
+                    </h4>
+                    <textarea v-model="refuseReason" rows="3" class="w-full bg-black/80 border-4 border-[#ef476f] rounded-2xl p-4 text-lg my-3"></textarea>
+                    <div class="flex gap-3">
+                        <button @click="submitRefuse" class="bg-[#ef476f] text-white font-black px-6 py-4 rounded-2xl text-lg flex-1 border-4 border-black">
+                            CONFIRMER
+                        </button>
+                        <button @click="showRefuseModal=false" class="bg-gray-700 px-6 py-4 rounded-2xl text-lg flex-1 border-4 border-black">
+                            ANNULER
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOAST -->
+            <div v-if="toast.show" class="fixed bottom-5 right-5 glass-modal px-6 py-4 rounded-[40px] border-6 border-[#ffbe0b] shadow-2xl z-[99999] flex items-center gap-4">
+                <i class="fas fa-bolt text-4xl text-[#ff006e]"></i>
+                <span class="font-black text-xl">{{ toast.message }}</span>
+            </div>
+        </div>
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script>
+        (function init() {
+            if (!localStorage.getItem('gbb_products')) {
+                localStorage.setItem('gbb_products', JSON.stringify([
+                    { id: 'GBB-' + Date.now() + '1', nom: 'NITRO BOOST 1 MOIS', prix: 9.99, image: '🚀', stock: 18 },
+                    { id: 'GBB-' + Date.now() + '2', nom: 'BADGE GBB OR', prix: 7.50, image: '🏅', stock: 12 },
+                    { id: 'GBB-' + Date.now() + '3', nom: 'CRÉDITS 100 GBB', prix: 22.00, image: '💎', stock: 7 },
+                    { id: 'GBB-' + Date.now() + '4', nom: 'RÔLE VIP NOIR', prix: 15.00, image: '🔮', stock: 3 }
+                ]));
+            }
+            if (!localStorage.getItem('gbb_orders')) localStorage.setItem('gbb_orders', JSON.stringify([]));
+            if (!localStorage.getItem('gbb_messages')) localStorage.setItem('gbb_messages', JSON.stringify([]));
+            if (!localStorage.getItem('gbb_shopName')) localStorage.setItem('gbb_shopName', 'GBB SHOP');
+            if (!localStorage.getItem('gbb_paypal')) localStorage.setItem('gbb_paypal', 'paypal@gbb-shop.xyz');
+            if (!localStorage.getItem('gbb_theme')) localStorage.setItem('gbb_theme', 'dark');
+            if (!localStorage.getItem('gbb_loggedUser')) localStorage.setItem('gbb_loggedUser', '');
+        })();
+
+        const App = {
+            template: document.getElementById('main-template').innerHTML,
+            data() {
+                return {
+                    isLoggedIn: false,
+                    discordIdInput: '',
+                    discordIdDisplay: '',
+                    view: 'home',
+                    isAdmin: false,
+                    adminPass: '',
+                    products: [],
+                    orders: [],
+                    messages: [],
+                    shopName: '',
+                    paypalEmail: '',
+                    shopNameInput: '',
+                    paypalInput: '',
+                    showBuyModal: false,
+                    selectedProd: null,
+                    buyerDiscord: '',
+                    buyerEmail: '',
+                    buyStep: 1,
+                    orderRef: '',
+                    uploadedFile: null,
+                    lastOrderId: '',
+                    trackingCode: '',
+                    trackedOrder: null,
+                    isDark: true,
+                    toast: { show: false, message: '' },
+                    editProdId: null,
+                    editForm: { nom: '', prix: 0, stock: 0, image: '' },
+                    newProdActive: false,
+                    newProd: { nom: '', prix: 0, image: '🆕', stock: 0 },
+                    showRefuseModal: false,
+                    refuseOrderId: null,
+                    refuseReason: '',
+                    replyMsg: {}
+                }
+            },
+            computed: {
+                userOrders() {
+                    return this.orders.filter(o => o.discord === this.discordIdDisplay).slice(-5).reverse();
+                }
+            },
+            mounted() {
+                const savedUser = localStorage.getItem('gbb_loggedUser');
+                if (savedUser) {
+                    this.isLoggedIn = true;
+                    this.discordIdDisplay = savedUser;
+                }
+                this.loadData();
+                this.loadConfig();
+                this.applyTheme();
+                
+                document.getElementById('fileUpload').addEventListener('change', (e) => {
+                    this.handleFileSelect(e.target.files[0]);
+                });
+            },
+            methods: {
+                loginWithDiscord() {
+                    if (!this.discordIdInput || this.discordIdInput.length < 3) {
+                        this.showToast('❌ ID DISCORD REQUIS');
+                        return;
+                    }
+                    this.isLoggedIn = true;
+                    this.discordIdDisplay = this.discordIdInput;
+                    localStorage.setItem('gbb_loggedUser', this.discordIdInput);
+                    this.showToast(`✅ CONNECTÉ`);
+                },
+                
+                loadData() {
+                    this.products = JSON.parse(localStorage.getItem('gbb_products')) || [];
+                    this.orders = JSON.parse(localStorage.getItem('gbb_orders')) || [];
+                    this.messages = JSON.parse(localStorage.getItem('gbb_messages')) || [];
+                },
+                loadConfig() {
+                    this.shopName = localStorage.getItem('gbb_shopName') || 'GBB SHOP';
+                    this.paypalEmail = localStorage.getItem('gbb_paypal') || 'paypal@gbb-shop.xyz';
+                    this.shopNameInput = this.shopName;
+                    this.paypalInput = this.paypalEmail;
+                },
+                saveProducts() { localStorage.setItem('gbb_products', JSON.stringify(this.products)); },
+                saveOrders() { localStorage.setItem('gbb_orders', JSON.stringify(this.orders)); },
+                saveMessages() { localStorage.setItem('gbb_messages', JSON.stringify(this.messages)); },
+                
+                setView(v) { 
+                    this.view = v; 
+                    if (v !== 'admin') this.loadData(); 
+                    this.loadConfig(); 
+                },
+                
+                toggleTheme() {
+                    this.isDark = !this.isDark;
+                    const b = document.getElementById('body-theme');
+                    if (this.isDark) {
+                        b.classList.remove('light-theme');
+                        b.classList.add('dark-theme');
+                    } else {
+                        b.classList.remove('dark-theme');
+                        b.classList.add('light-theme');
+                    }
+                    localStorage.setItem('gbb_theme', this.isDark ? 'dark' : 'light');
+                },
+                applyTheme() {
+                    let t = localStorage.getItem('gbb_theme');
+                    this.isDark = t !== 'light';
+                    this.toggleTheme();
+                },
+                
+                updateShopName() {
+                    if (this.shopNameInput.trim()) {
+                        this.shopName = this.shopNameInput;
+                        localStorage.setItem('gbb_shopName', this.shopName);
+                        this.showToast('🏷️ NOM MODIFIÉ');
+                    }
+                },
+                updatePaypal() {
+                    if (this.paypalInput.trim()) {
+                        this.paypalEmail = this.paypalInput;
+                        localStorage.setItem('gbb_paypal', this.paypalEmail);
+                        this.showToast('💰 PAYPAL MIS À JOUR');
+                    }
+                },
+                
+                triggerFileUpload() {
+                    document.getElementById('fileUpload').click();
+                },
+                handleFileSelect(file) {
+                    if (!file) return;
+                    if (!file.type.startsWith('image/')) {
+                        this.showToast('❌ FORMAT NON SUPPORTÉ');
+                        return;
+                    }
+                    this.uploadedFile = file;
+                    this.showToast(`📸 FICHIER PRÊT`);
+                },
+                handleFileDrop(e) {
+                    const file = e.dataTransfer.files[0];
+                    this.handleFileSelect(file);
+                },
+                
+                openBuyModal(p) {
+                    this.selectedProd = p;
+                    this.showBuyModal = true;
+                    this.buyStep = 1;
+                    this.buyerDiscord = this.discordIdDisplay;
+                    this.buyerEmail = '';
+                    this.uploadedFile = null;
+                    this.orderRef = 'GBB-' + Date.now() + '-' + Math.floor(Math.random() * 9000);
+                },
+                closeBuyModal() {
+                    this.showBuyModal = false;
+                    this.loadData();
+                },
+                submitBuyerInfo() {
+                    if (!this.buyerEmail) {
+                        this.showToast('❌ EMAIL REQUIS');
+                        return;
+                    }
+                    this.buyStep = 2;
+                },
+                finalizeOrder() {
+                    if (!this.uploadedFile) {
+                        this.showToast('❌ FICHIER REQUIS');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const proofData = e.target.result;
+                        
+                        const newOrder = {
+                            id: this.orderRef,
+                            produit: this.selectedProd.id,
+                            discord: this.buyerDiscord,
+                            email: this.buyerEmail,
+                            preuveData: proofData,
+                            preuveNom: this.uploadedFile.name,
+                            statut: 'en attente',
+                            date: new Date().toLocaleString('fr-FR')
+                        };
+                        
+                        this.orders.push(newOrder);
+                        this.saveOrders();
+                        
+                        let prod = this.products.find(p => p.id === this.selectedProd.id);
+                        if (prod && prod.stock > 0) prod.stock--;
+                        this.saveProducts();
+                        
+                        this.lastOrderId = this.orderRef;
+                        this.buyStep = 3;
+                        this.showToast('✅ COMMANDE ENREGISTRÉE');
+                    };
+                    reader.readAsDataURL(this.uploadedFile);
+                },
+                
+                openAdminPasswordModal() {
+                    this.view = 'admin';
+                    this.isAdmin = false;
+                    this.adminPass = '';
+                },
+                checkAdminPass() {
+                    if (this.adminPass === 'admin123') {
+                        this.isAdmin = true;
+                        this.showToast('🛡️ ADMIN');
+                        this.loadData();
+                        this.loadConfig();
+                    } else {
+                        this.showToast('⛔ ACCÈS REFUSÉ');
+                    }
+                },
+                
+                statutClass(s) {
+                    if (s === 'en attente') return 'attente';
+                    if (s === 'accepté' || s === 'validé') return 'valide';
+                    return 'refuse';
+                },
+                getProductName(pid) {
+                    let p = this.products.find(p => p.id === pid);
+                    return p ? p.nom : pid;
+                },
+                
+                trackOrder() {
+                    this.trackedOrder = this.orders.find(o => o.id.includes(this.trackingCode) || o.id === this.trackingCode);
+                    if (this.trackedOrder) {
+                        this.showToast('🔍 COMMANDE TROUVÉE');
+                    } else {
+                        this.showToast('❌ INTROUVABLE');
+                    }
+                },
+                getLastMessageForOrder(orderId) {
+                    let m = this.messages.filter(x => x.commande_id === orderId).pop();
+                    return m ? m.contenu : null;
+                },
+                
+                initNewProduct() { this.newProdActive = !this.newProdActive; },
+                addProduct() {
+                    if (!this.newProd.nom) return;
+                    this.products.push({ id: 'GBB-' + Date.now(), ...this.newProd });
+                    this.saveProducts();
+                    this.newProdActive = false;
+                    this.newProd = { nom: '', prix: 0, image: '🆕', stock: 0 };
+                    this.showToast('✅ PRODUIT AJOUTÉ');
+                },
+                editProduct(p) {
+                    this.editProdId = p.id;
+                    this.editForm = { nom: p.nom, prix: p.prix, stock: p.stock, image: p.image };
+                },
+                saveProduct() {
+                    let p = this.products.find(p => p.id === this.editProdId);
+                    if (p) {
+                        p.nom = this.editForm.nom;
+                        p.prix = this.editForm.prix;
+                        p.stock = this.editForm.stock;
+                    }
+                    this.saveProducts();
+                    this.editProdId = null;
+                    this.showToast('✏️ PRODUIT MODIFIÉ');
+                },
+                deleteProduct(id) {
+                    this.products = this.products.filter(p => p.id !== id);
+                    this.saveProducts();
+                    this.showToast('🗑️ PRODUIT SUPPRIMÉ');
+                },
+                
+                updateOrderStatus(orderId, status) {
+                    let ord = this.orders.find(o => o.id === orderId);
+                    if (ord) {
+                        ord.statut = (status === 'accepté') ? 'validé' : 'refusé';
+                        this.saveOrders();
+                        this.showToast(`📦 STATUT: ${ord.statut}`);
+                        
+                        let msg = {
+                            id: 'm' + Date.now(),
+                            commande_id: orderId,
+                            expediteur: 'ADMIN',
+                            contenu: status === 'accepté' ? '✅ PAIEMENT ACCEPTÉ' : `❌ REFUSÉ: ${this.refuseReason || 'Non conforme'}`,
+                            date: new Date().toLocaleString()
+                        };
+                        this.messages.push(msg);
+                        this.saveMessages();
+                    }
+                },
+                openRefuseModal(id) {
+                    this.showRefuseModal = true;
+                    this.refuseOrderId = id;
+                    this.refuseReason = '';
+                },
+                submitRefuse() {
+                    this.updateOrderStatus(this.refuseOrderId, 'refusé');
+                    this.showRefuseModal = false;
+                },
+                
+                getMessagesByOrder(orderId) {
+                    return this.messages.filter(m => m.commande_id === orderId).slice(-3);
+                },
+                sendAdminMessage(orderId) {
+                    if (!this.replyMsg[orderId]?.trim()) return;
+                    let msg = {
+                        id: 'm' + Date.now() + orderId,
+                        commande_id: orderId,
+                        expediteur: 'ADMIN',
+                        contenu: this.replyMsg[orderId],
+                        date: new Date().toLocaleString()
+                    };
+                    this.messages.push(msg);
+                    this.saveMessages();
+                    this.replyMsg[orderId] = '';
+                    this.showToast('📨 MESSAGE ENVOYÉ');
+                },
+                
+                showToast(msg) {
+                    this.toast = { show: true, message: msg };
+                    setTimeout(() => this.toast.show = false, 3000);
+                }
+            }
+        };
+        Vue.createApp(App).mount('#app');
+    </script>
+</body>
+</html>
